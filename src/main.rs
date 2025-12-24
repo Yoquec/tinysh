@@ -3,16 +3,15 @@ use std::io::{self, Write};
 
 fn main() {
     loop {
-        rep();
+        print!("$ ");
+        io::stdout().flush().unwrap();
+
+        let mut buf = String::new();
+        io::stdin().read_line(&mut buf).unwrap();
+
+        match buf.trim_end() {
+            "exit" => break,
+            _ => println!("{}: command not found", buf.trim_end()),
+        }
     }
-}
-
-fn rep() {
-    print!("$ ");
-    io::stdout().flush().unwrap();
-
-    let mut buf = String::new();
-    io::stdin().read_line(&mut buf).unwrap();
-
-    println!("{}: command not found", buf.trim_end());
 }
