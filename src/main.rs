@@ -2,6 +2,12 @@
 use std::io::{self, Write};
 
 fn main() {
+    loop {
+        rep();
+    }
+}
+
+fn rep() {
     print!("$ ");
     io::stdout().flush().unwrap();
 
