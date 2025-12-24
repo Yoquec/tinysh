@@ -9,8 +9,9 @@ fn main() {
         let mut buf = String::new();
         io::stdin().read_line(&mut buf).unwrap();
 
-        match buf.trim_end() {
-            "exit" => break,
+        match &buf.trim().split_whitespace().collect::<Vec<_>>()[..] {
+            ["exit", ..] => break,
+            ["echo", rest @ ..] => println!("{}", rest.join(" ")),
             _ => println!("{}: command not found", buf.trim_end()),
         }
     }
