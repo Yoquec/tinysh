@@ -2,9 +2,11 @@
 use std::io::{self, Write};
 use std::{
     env,
+    ffi::OsStr,
     fs::{self, DirEntry},
     os::unix::fs::PermissionsExt,
     path::PathBuf,
+    process::Command,
 };
 
 const BUILTINS: [&str; 3] = ["echo", "type", "exit"];
@@ -22,7 +24,10 @@ fn main() {
                 "echo" => echo(arguments),
                 "type" => type_(arguments),
                 "exit" => break 'mainloop,
-                _ => print_not_found(command),
+                _ => match find_path(command) {
+                    Some(_) => run(command, arguments),
+                    None => print_not_found(command),
+                },
             },
             _ => continue,
         }
@@ -49,6 +54,12 @@ fn type_(commands: &[&str]) {
 
 fn echo(arguments: &[&str]) {
     println!("{}", arguments.join(" "))
+}
+
+fn run<S: AsRef<OsStr>>(command: S, arguments: &[&str]) {
+    let mut command = Command::new(command);
+    let output = command.args(arguments).output().unwrap();
+    print!("{}", String::from_utf8_lossy(&output.stdout));
 }
 
 /// Finds an executable binary in the path
