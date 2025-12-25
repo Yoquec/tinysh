@@ -1,7 +1,7 @@
 #[allow(unused_imports)]
 use std::io::{self, Write};
 use std::{
-    env,
+    env::{self, current_dir},
     ffi::OsStr,
     fs::{self, DirEntry},
     os::unix::fs::PermissionsExt,
@@ -9,10 +9,10 @@ use std::{
     process::Command,
 };
 
-const BUILTINS: [&str; 3] = ["echo", "type", "exit"];
+const BUILTINS: [&str; 4] = ["echo", "type", "exit", "pwd"];
 
 fn main() {
-    'mainloop: loop {
+    loop {
         print!("$ ");
         io::stdout().flush().unwrap();
 
@@ -23,7 +23,8 @@ fn main() {
             [command, arguments @ ..] => match *command {
                 "echo" => echo(arguments),
                 "type" => type_(arguments),
-                "exit" => break 'mainloop,
+                "pwd" => pwd(),
+                "exit" => return,
                 _ => match find_path(command) {
                     Some(_) => run(command, arguments),
                     None => print_not_found(command),
@@ -54,6 +55,11 @@ fn type_(commands: &[&str]) {
 
 fn echo(arguments: &[&str]) {
     println!("{}", arguments.join(" "))
+}
+
+fn pwd() {
+    let wd = current_dir().unwrap();
+    println!("{}", wd.as_path().to_string_lossy())
 }
 
 fn run<S: AsRef<OsStr>>(command: S, arguments: &[&str]) {
