@@ -71,8 +71,14 @@ fn cd(arguments: &[&str]) {
         return;
     }
 
-    let target = arguments.get(0).unwrap();
-    if let Err(_) = set_current_dir(target) {
+    let mut target = arguments.get(0).unwrap().to_string();
+
+    if target.starts_with("~") {
+        let home = env::var_os("HOME").unwrap();
+        target = target.replace("~", home.to_str().unwrap());
+    }
+
+    if let Err(_) = set_current_dir(&target) {
         println!("cd: {target}: No such file or directory");
     }
 }
