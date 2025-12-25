@@ -1,7 +1,7 @@
 #[allow(unused_imports)]
 use std::io::{self, Write};
 use std::{
-    env::{self, current_dir},
+    env::{self, current_dir, set_current_dir},
     ffi::OsStr,
     fs::{self, DirEntry},
     os::unix::fs::PermissionsExt,
@@ -21,6 +21,7 @@ fn main() {
             [command, arguments @ ..] => match *command {
                 "echo" => echo(arguments),
                 "type" => type_(arguments),
+                "cd" => cd(arguments),
                 "pwd" => pwd(),
                 "exit" => return,
                 _ => match find_path(command) {
@@ -38,7 +39,7 @@ fn print_not_found(command: &str) {
 }
 
 fn is_builtin(command: &str) -> bool {
-    matches!(command, "echo" | "type" | "exit" | "pwd")
+    matches!(command, "echo" | "type" | "exit" | "pwd" | "cd")
 }
 
 fn type_(commands: &[&str]) {
@@ -62,6 +63,18 @@ fn echo(arguments: &[&str]) {
 fn pwd() {
     let wd = current_dir().unwrap();
     println!("{}", wd.as_path().to_string_lossy())
+}
+
+fn cd(arguments: &[&str]) {
+    if arguments.len() > 1 {
+        println!("cd: too many arguments");
+        return;
+    }
+
+    let target = arguments.get(0).unwrap();
+    if let Err(_) = set_current_dir(target) {
+        println!("cd: {target}: No such file or directory");
+    }
 }
 
 fn run<S: AsRef<OsStr>>(command: S, arguments: &[&str]) {
