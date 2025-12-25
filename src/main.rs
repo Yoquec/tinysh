@@ -9,8 +9,6 @@ use std::{
     process::Command,
 };
 
-const BUILTINS: [&str; 4] = ["echo", "type", "exit", "pwd"];
-
 fn main() {
     loop {
         print!("$ ");
@@ -39,9 +37,13 @@ fn print_not_found(command: &str) {
     println!("{}: command not found", command.trim())
 }
 
+fn is_builtin(command: &str) -> bool {
+    matches!(command, "echo" | "type" | "exit" | "pwd")
+}
+
 fn type_(commands: &[&str]) {
     for cmd in commands {
-        if BUILTINS.contains(cmd) {
+        if is_builtin(cmd) {
             println!("{} is a shell builtin", *cmd);
             continue;
         }
