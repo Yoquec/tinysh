@@ -2,12 +2,19 @@
 use std::io::{self, Write};
 use std::{
     env::{self, current_dir, set_current_dir},
-    ffi::OsStr,
     fs::{self, DirEntry},
     os::unix::fs::PermissionsExt,
     path::PathBuf,
     process::Command,
 };
+
+enum Builtin {
+    Pwd,
+    Echo,
+    Cd,
+    Type,
+    Exit,
+}
 
 fn main() {
     loop {
@@ -17,20 +24,35 @@ fn main() {
         let mut buf = String::new();
         io::stdin().read_line(&mut buf).unwrap();
 
-        match &buf.trim().split_whitespace().collect::<Vec<_>>()[..] {
-            [command, arguments @ ..] => match *command {
-                "echo" => echo(arguments),
-                "type" => type_(arguments),
-                "cd" => cd(arguments),
-                "pwd" => pwd(),
-                "exit" => return,
+        let splits = buf.trim().split_whitespace().collect::<Vec<_>>();
+
+        match &splits[..] {
+            [command, arguments @ ..] => match parse(command) {
+                Some(Builtin::Echo) => echo(arguments),
+                Some(Builtin::Type) => type_(arguments),
+                Some(Builtin::Cd) => cd(arguments),
+                Some(Builtin::Pwd) => pwd(),
+                Some(Builtin::Exit) => return,
                 _ => match find_path(command) {
-                    Some(_) => run(command, arguments),
+                    Some(_) => run(*command, arguments),
                     None => print_not_found(command),
                 },
             },
+            // No output introduced or just empty lines, break to a new input line
             _ => continue,
         }
+    }
+}
+
+/// Determines if the current command is a builtin
+fn parse(command: &str) -> Option<Builtin> {
+    match command {
+        "echo" => Some(Builtin::Echo),
+        "type" => Some(Builtin::Type),
+        "cd" => Some(Builtin::Cd),
+        "pwd" => Some(Builtin::Pwd),
+        "exit" => Some(Builtin::Exit),
+        _ => None,
     }
 }
 
@@ -38,13 +60,9 @@ fn print_not_found(command: &str) {
     println!("{}: command not found", command.trim())
 }
 
-fn is_builtin(command: &str) -> bool {
-    matches!(command, "echo" | "type" | "exit" | "pwd" | "cd")
-}
-
 fn type_(commands: &[&str]) {
     for cmd in commands {
-        if is_builtin(cmd) {
+        if let Some(_) = parse(cmd) {
             println!("{} is a shell builtin", *cmd);
             continue;
         }
@@ -83,7 +101,7 @@ fn cd(arguments: &[&str]) {
     }
 }
 
-fn run<S: AsRef<OsStr>>(command: S, arguments: &[&str]) {
+fn run(command: &str, arguments: &[&str]) {
     let mut command = Command::new(command);
     let output = command.args(arguments).output().unwrap();
     print!("{}", String::from_utf8_lossy(&output.stdout));
